@@ -1,6 +1,6 @@
 Project 0 Report for Group 6
 
--===-
+-====-
 
 Andrew Nystrom:
 
@@ -10,7 +10,7 @@ My tests seemed to all run correctly, though I had trouble finding the actual so
 
 The Thread class in Nachos is used to manage the creation and execution of multiple process threads. It contains functions to: create new parallel threads [Fork()], clean up finished threads [Finish()], pass control over the CPU to another thread [Yield()], and pass control over the CPU then wait until explicitly made ready again [Sleep()].
 
--===-
+-====-
 
 Kendrick Crespo:
 
@@ -20,7 +20,7 @@ The actual tests went smoothly for me with no errors. All of them ran correctly.
 
 The Thread class is used for handling thread creation, scheduling, execution, and synchronization. It is a key component for demonstrating key concepts of parallelism and multithreading in operating systems.
 
--===-
+-====-
 
 David Martinez:
 
