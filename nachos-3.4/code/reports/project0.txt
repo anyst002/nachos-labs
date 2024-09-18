@@ -1,0 +1,37 @@
+Project 0 Report for Group 6
+
+-===-
+
+Andrew Nystrom:
+
+I found installing Nachos v3.4 to be very straightforward; I used ocelot.aul.fiu.edu as my base UNIX machine. In the near future, I'd like to set up a better text editor and debugger.
+
+My tests seemed to all run correctly, though I had trouble finding the actual source code of the Halt(); system call. The Nachos Roadmap also didn't seem to explain single-stepping with enough detail, but I was able to figure it out.
+
+The Thread class in Nachos is used to manage the creation and execution of multiple process threads. It contains functions to: create new parallel threads [Fork()], clean up finished threads [Finish()], pass control over the CPU to another thread [Yield()], and pass control over the CPU then wait until explicitly made ready again [Sleep()].
+
+-===-
+
+Kendrick Crespo:
+
+Installing Nachos was a challenge for me. I found it to be easy to do once I knew everything. However, learning to install it was hard. Information was spread out and the available information was vague. I had to consult with teammates to help with certain tasks. The platform itself is easy to understand once understanding the commands.
+
+The actual tests went smoothly for me with no errors. All of them ran correctly. However there are still some things that I am confused about but it's because of my lack of knowledge with using Nachos and the ocelot machine.
+
+The Thread class is used for handling thread creation, scheduling, execution, and synchronization. It is a key component for demonstrating key concepts of parallelism and multithreading in operating systems.
+
+-===-
+
+David Martinez:
+
+a) Experience Installing Nachos
+
+I installed Nachos version 3.4 on the UNIX machine ocelot.aul.fiu.edu. I began by downloading the Nachos source code Nachos source code, extracting it, and compiling it using make. I made sure that gcc and make were available in the system's PATH, I set the LD_LIBRARY_PATH environment variable to include /usr/local/lib. Running make in the nachos-3.4/code directory compiled the Nachos system without errors, confirming a successful installation on the platform.
+
+b) Experience Running the Tests
+
+I ran two tests to verify the proper functionality of Nachos. First, I executed the threads demo using the ./nachos command, which produced the expected output of two threads looping through various iterations. Then, I ran the userprog demo by executing the halt test program using ./nachos -x ../test/halt. The program halted as expected, and the system produced the correct output. Both tests confirmed that Nachos was compiled and functioning correctly.
+
+c) Description of the Thread Class in Nachos
+
+The Thread class in Nachos is responsible for creating and managing threads. It contains methods to initialize a thread, set its stack, and execute it. Each thread is associated with a function that it runs, and the class provides mechanisms for thread context switching, yielding the CPU to other threads, and handling thread states. The Thread class is critical for the multitasking capabilities of Nachos, allowing multiple threads to execute concurrently within the system.
