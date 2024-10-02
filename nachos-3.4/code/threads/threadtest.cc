@@ -27,8 +27,9 @@ int testnum = 1;
 
 #ifdef HW1_SEMAPHORES
 
-int SharedVariable;
+int SharedVariable, numThreadsActive;
 Semaphore* mutex = new Semaphore("thread mutex", 1);
+Semaphore* barrier = new Semaphore("thread barrier", 1);
 
 void
 SimpleThread(int which)
@@ -45,11 +46,16 @@ SimpleThread(int which)
         currentThread->Yield();
     }
 
-    mutex->P(); //barrier to sync thread completion order
+    barrier->P();
+    numThreadsActive--;
+    barrier->V();
+
+    while (numThreadsActive > -1) { //barrier to sync thread completion order
+        currentThread->Yield();
+    }
+
     val = SharedVariable;
     printf("Thread %d sees final value %d\n", which, val);
-    currentThread->Yield();
-    mutex->V();
 }
 
 #else
@@ -90,8 +96,6 @@ ThreadTest1()
 //----------------------------------------------------------------------
 
 #ifdef HW1_SEMAPHORES
-
-int numThreadsActive; // used to implement barrier upon completion
 
 void
 ThreadTest(int n) {
