@@ -11,6 +11,7 @@
 
 #include "copyright.h"
 #include "system.h"
+#include "synch.h"
 
 // testnum is set in main.cc
 int testnum = 1;
@@ -24,6 +25,35 @@ int testnum = 1;
 //	purposes.
 //----------------------------------------------------------------------
 
+#ifdef HW1_SEMAPHORES
+
+int SharedVariable;
+Semaphore* mutex = new Semaphore("thread mutex", 1);
+
+void
+SimpleThread(int which)
+{
+    int num, val;
+
+    for (num = 0; num < 5; num++) {
+        mutex->P();
+        val = SharedVariable;
+        printf("*** thread %d sees value %d\n", which, val);
+        currentThread->Yield();
+        SharedVariable = val + 1;
+        mutex->V();
+        currentThread->Yield();
+    }
+
+    mutex->P(); //barrier to sync thread completion order
+    val = SharedVariable;
+    printf("Thread %d sees final value %d\n", which, val);
+    currentThread->Yield();
+    mutex->V();
+}
+
+#else
+
 void
 SimpleThread(int which)
 {
@@ -34,6 +64,8 @@ SimpleThread(int which)
         currentThread->Yield();
     }
 }
+
+#endif 
 
 //----------------------------------------------------------------------
 // ThreadTest1
@@ -68,7 +100,7 @@ ThreadTest(int n) {
     numThreadsActive = n;
     printf("NumthreadsActive = %d\n", numThreadsActive);
 
-    for(int i=1; i<n; i++)
+    for(int i=1; i<=n; i++)
     {
         t = new Thread("forked thread");
         t->Fork(SimpleThread,i);
