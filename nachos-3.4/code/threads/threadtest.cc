@@ -25,7 +25,7 @@ int testnum = 1;
 //	purposes.
 //----------------------------------------------------------------------
 
-#ifdef HW1_SEMAPHORES
+#if defined(CHANGED) && defined(HW1_SEMAPHORES)
 
 int SharedVariable, numThreadsActive;
 Semaphore* mutex = new Semaphore("thread mutex", 1);
@@ -50,7 +50,7 @@ SimpleThread(int which)
     numThreadsActive--;
     barrier->V();
 
-    while (numThreadsActive > -1) { //barrier to sync thread completion order
+    while (numThreadsActive > -1) { //barrier for syncing thread completion order
         currentThread->Yield();
     }
 
@@ -95,7 +95,7 @@ ThreadTest1()
 // 	Invoke a test routine.
 //----------------------------------------------------------------------
 
-#ifdef HW1_SEMAPHORES
+#if defined(CHANGED) && defined(HW1_SEMAPHORES)
 
 void
 ThreadTest(int n) {
