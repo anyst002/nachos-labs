@@ -102,48 +102,54 @@ Semaphore::V()
 // the test case in the network assignment won't work!
 Lock::Lock(const char* debugName) {
     name = debugName;
-    free = true;
-    queue = new List;
+    free = true;  // Lock is initially free
+    queue = new List;  // Queue to store threads waiting for the lock
+    lockOwner = NULL;  // No thread owns the lock initially
 }
+
 Lock::~Lock() {
-    delete queue;
+    delete queue;  // Clean up the waiting queue
 }
 
 void Lock::Acquire() {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);  // Disable interrupts
 
-    // Disable interrupts -- similar to Semaphore P()
+    // If the lock is already acquired by another thread, wait until it's free
+    while (!free) {
+        queue->Append((void *)currentThread);  // Put the current thread into the waiting queue
+        currentThread->Sleep();  // Go to sleep until the lock is released
+    }
 
-    // Check if lock is free
+    free = false;  // Lock is now acquired
+    lockOwner = currentThread;  // Set the current thread as the owner of the lock
 
-    // If yes, make the lock not free anymore
-    free = false;
-
-    // Else, lock is not free -- add self to queue
-    // (keep checking for free lock while)
-
-    // Enable interrupts
+    (void)interrupt->SetLevel(oldLevel);  // Re-enable interrupts
 }
+
 void Lock::Release() {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);  // Disable interrupts
 
-    // disable interrupts
+    // Ensure the current thread is the owner of the lock
+    ASSERT(isHeldByCurrentThread());
 
-    // check if thread has lock ... isHeldByCurrentThread ?
-
-    // If not, do nothing
-
+    // Release the lock
     free = true;
+    lockOwner = NULL;  // No thread owns the lock anymore
 
-    // If yes, release the lock and wakeup 1 of the waiting threads in queue
+    // Wake up one thread waiting for the lock, if any
+    Thread* nextThread = (Thread*)queue->Remove();
+    if (nextThread != NULL) {
+        scheduler->ReadyToRun(nextThread);  // Make the thread ready to run
+    }
 
-    // enable interrupts
-
+    (void)interrupt->SetLevel(oldLevel);  // Re-enable interrupts
 }
+
 
 bool Lock::isHeldByCurrentThread() {
-
-    return true;
-
+    return currentThread == lockOwner;  // Returns true if current thread holds the lock
 }
+
 
 Condition::Condition(const char* debugName) {
     name = debugName; // init
@@ -154,34 +160,35 @@ Condition::~Condition() {
 }
 
 void Condition::Wait(Lock* conditionLock) {
+    ASSERT(conditionLock->isHeldByCurrentThread());  // Ensure the thread holds the lock
 
-    // check if calling thread holds the lock
-    ASSERT(conditionLock->isHeldByCurrentThread());
+    // Release the lock while waiting
+    conditionLock->Release();
 
-    // Release the lock
+    // Add current thread to the waiting queue
+    queue->Append((void *)currentThread);
+    currentThread->Sleep();  // Put thread to sleep
 
-    // put self in the queue of waiting threads
-
-    // Re-acquire the lock
-
+    // Re-acquire the lock once it is woken up
+    conditionLock->Acquire();
 }
+
 void Condition::Signal(Lock* conditionLock) {
+    ASSERT(conditionLock->isHeldByCurrentThread());  // Ensure the thread holds the lock
 
-    // check if calling thread holds the lock
-    ASSERT(conditionLock->isHeldByCurrentThread());
-
-    // Dequeue one of the threads in the queue
-
-    // If thread exists, wake it up.
-
+    // Wake up one waiting thread
+    Thread* thread = (Thread *)queue->Remove();
+    if (thread != NULL) {
+        scheduler->ReadyToRun(thread);  // Make the thread ready to run
+    }
 }
+
 void Condition::Broadcast(Lock* conditionLock) {
+    ASSERT(conditionLock->isHeldByCurrentThread());  // Ensure the thread holds the lock
 
-    // check if calling thread holds the lock
-    ASSERT(conditionLock->isHeldByCurrentThread());
-
-    // Dequeue all threads in the queue one-by-one
-
-    // Wakeup each thread
-
- }
+    // Wake up all waiting threads
+    Thread* thread;
+    while ((thread = (Thread *)queue->Remove()) != NULL) {
+        scheduler->ReadyToRun(thread);  // Make each thread ready to run
+    }
+}
