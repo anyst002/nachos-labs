@@ -160,6 +160,8 @@ Condition::~Condition() {
 }
 
 void Condition::Wait(Lock* conditionLock) {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);  // Disable interrupts
+
     ASSERT(conditionLock->isHeldByCurrentThread());  // Ensure the thread holds the lock
 
     // Release the lock while waiting
@@ -171,6 +173,8 @@ void Condition::Wait(Lock* conditionLock) {
 
     // Re-acquire the lock once it is woken up
     conditionLock->Acquire();
+
+    (void)interrupt->SetLevel(oldLevel);  // Re-enable interrupts
 }
 
 void Condition::Signal(Lock* conditionLock) {

@@ -25,7 +25,7 @@ int testnum = 1;
 //	purposes.
 //----------------------------------------------------------------------
 
-#if defined(CHANGED) && defined(HW1_SEMAPHORES)
+#if defined(CHANGED) && defined(HW1_SEMAPHORES) //semaphore test
 
 int SharedVariable, numThreadsActive;
 Semaphore* mutex = new Semaphore("thread mutex", 1);
@@ -58,7 +58,41 @@ SimpleThread(int which)
     printf("Thread %d sees final value %d\n", which, val);
 }
 
+#elif defined(CHANGED) && defined(HW1_LOCKS) //lock test
+
+int SharedVariable, numThreadsActive;
+Lock* mutex = new Lock("thread mutex");
+Lock* barrier = new Lock("thread barrier");
+
+void
+SimpleThread(int which)
+{
+    int num, val;
+
+    for (num = 0; num < 5; num++) {
+        mutex->Acquire();
+        val = SharedVariable;
+        printf("*** thread %d sees value %d\n", which, val);
+        currentThread->Yield();
+        SharedVariable = val + 1;
+        mutex->Release();
+        currentThread->Yield();
+    }
+
+    barrier->Acquire();
+    numThreadsActive--;
+    barrier->Release();
+
+    while (numThreadsActive > -1) { //barrier for syncing thread completion order
+        currentThread->Yield();
+    }
+
+    val = SharedVariable;
+    printf("Thread %d sees final value %d\n", which, val);
+}
+
 #else
+
 
 void
 SimpleThread(int which)
@@ -95,7 +129,7 @@ ThreadTest1()
 // 	Invoke a test routine.
 //----------------------------------------------------------------------
 
-#if defined(CHANGED) && defined(HW1_SEMAPHORES)
+#if defined(CHANGED) && (defined(HW1_SEMAPHORES) || defined(HW1_LOCKS)) 
 
 void
 ThreadTest(int n) {
