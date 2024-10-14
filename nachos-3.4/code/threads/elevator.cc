@@ -14,12 +14,29 @@ ELEVATOR *e;
 void ELEVATOR::start() {
 
     while(1) {
-
         // A. Wait until hailed
-
+       elevatorLock->Acquire();
+        bool hasPassengers = false;
+        for (int i =0; i< numFloors; i++){
+            if (personsWaiting[i] > 0){
+                hasPassengers = true;
+                break;
+            }
+        }
         // B. While there are active persons, loop doing the following
+        for(int i = 0; i < numFloors; i++){
         //      0. Acquire elevatorLock
+            printf("Elevator is moving to floor %d.\n", currentFloor);
+            elevatorLock->Release();
+            for(int j=0; j < 500000; j++){
+                currentThread->Yield();
+            }
+            elevatorLock->Acquire();
         //      1. Signal persons inside elevator to get off (leaving->broadcast(elevatorLock))
+        leaving[currentFloor]->Broadcast(elevatorLock);
+            while (occupany > 0){
+                leaving[currentFloor]->Wait(elevatorLock);
+            }
         //      2. Signal persons atFloor to get in, one at a time, checking occupancyLimit each time
         //      2.5 Release elevatorLock
         //      3. Spin for some time
