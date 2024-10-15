@@ -7,19 +7,20 @@ ELEVATOR* e;  // Global elevator instance
 int nextPersonID = 1;
 Lock* personIDLock = new Lock("PersonIDLock");  // Lock for generating person IDs
 
-ELEVATOR::ELEVATOR(int numFloors) {
+ELEVATOR::ELEVATOR(int numFloors) { //TODO change name for clarity
     this->numFloors = numFloors;
     this->currentFloor = 1;
     this->occupancy = 0;
 
     personsWaiting = new int[numFloors]();  // Initialize waiting counts to 0
+    personsLeaving = new int[numFloors]();  // Initialize leaving flags to 0
 
     // Initialize condition variables
     entering = new Condition*[numFloors];
     leaving = new Condition*[numFloors];
     for (int i = 0; i < numFloors; i++) {
-        entering[i] = new Condition("Entering " + std::to_string(i));
-        leaving[i] = new Condition("Leaving " + std::to_string(i));
+        entering[i] = new Condition("Entering " + i);
+        leaving[i] = new Condition("Leaving " + i);
     }
 
     elevatorLock = new Lock("ElevatorLock");
@@ -29,51 +30,59 @@ void ELEVATOR::start() {
     while (true) {
         elevatorLock->Acquire();
 
-        // Check if there are passengers waiting on any floor
-        bool hasPassengers = false;
-        for (int i = 0; i < numFloors; i++) {
-            if (personsWaiting[i] > 0) {
-                hasPassengers = true;
+        // If no passengers, release lock and yield
+        if (!hasActivePersons()) {
+            elevatorLock->Release();
+
+            // Wait for other passengers to show up
+            for (int j = 0; j < 1000000; j++) {
+                currentThread->Yield();
+            }
+            
+            // If still no passengers, end elevator thread
+            if (!hasActivePersons()) {
                 break;
             }
-        }
 
-        // If no passengers, release lock and yield
-        if (!hasPassengers && occupancy == 0) {
-            elevatorLock->Release();
-            currentThread->Yield();
-            continue;
+            // Else there are passengers, so keep going
+            elevatorLock->Acquire();
         }
 
         // Move the elevator floor by floor
         for (int i = 0; i < numFloors; i++) {
-            printf("Elevator is moving to floor %d.\n", i + 1);
             currentFloor = i + 1;
-            elevatorLock->Release();
+            printf("Elevator arrives on floor %d\n", currentFloor);
 
+            // Signal all passengers leaving on this floor to leave
+            if (personsLeaving[i] != 0) {
+                printf("DEBUG - personsLeaving called\n");
+                leaving[i]->Broadcast(elevatorLock);
+                leaving[i]->Wait(elevatorLock);
+                personsLeaving[i] = 0;
+            }
+            printf("DEBUG - past personsLeaving check\n");
+            // Allow passengers to enter one at a time
+            while (personsWaiting[i] > 0 && occupancy < 5) {
+                printf("DEBUG - personsWaiting called\n");
+                entering[i]->Signal(elevatorLock);
+                personsWaiting[i]--;
+                occupancy++;
+            }
+            printf("DEBUG - past personsWaiting check\n");
+            elevatorLock->Release();
+            printf("DEBUG - lock released\n");
             // Simulate travel time (yield to other threads)
             for (int j = 0; j < 500000; j++) {
                 currentThread->Yield();
             }
-
+            printf("DEBUG - spinning finished\n");
             elevatorLock->Acquire();
-
-            // Signal all passengers to leave
-            leaving[currentFloor - 1]->Broadcast(elevatorLock);
-            while (occupancy > 0) {
-                leaving[currentFloor - 1]->Wait(elevatorLock);
-            }
-
-            // Allow passengers to enter one at a time
-            while (personsWaiting[currentFloor - 1] > 0 && occupancy < 5) {
-                entering[currentFloor - 1]->Signal(elevatorLock);
-                personsWaiting[currentFloor - 1]--;
-                occupancy++;
-            }
+            printf("DEBUG - lock acquired\n");
         }
 
         elevatorLock->Release();
     }
+    printf("DEBUG - elevator thread terminated\n");
 }
 
 void ELEVATOR::hailElevator(Person* p) {
@@ -88,6 +97,7 @@ void ELEVATOR::hailElevator(Person* p) {
 
     // Person enters the elevator
     printf("Person %d got into the elevator.\n", p->id);
+    personsLeaving[p->toFloor - 1] = 1;
 
     // Wait for the elevator to reach the destination floor
     leaving[p->toFloor - 1]->Wait(elevatorLock);
@@ -97,15 +107,41 @@ void ELEVATOR::hailElevator(Person* p) {
     occupancy--;
 
     // Signal that the person has exited
-    leaving[p->toFloor - 1]->Signal(elevatorLock);
+    leaving[p->toFloor - 1]->Signal(elevatorLock); //TODO signals threads to leave until fully empty
 
     elevatorLock->Release();
+}
+
+bool ELEVATOR::hasActivePersons() {
+    bool hasPassengers = false;
+
+    // Check each floor for people waiting
+    for (int i = 0; i < numFloors; i++) {
+        if (personsWaiting[i] > 0) {
+            hasPassengers = true;
+            break;
+        }
+    }
+
+    // If no persons waiting and elevator is empty, return false
+    if (!hasPassengers && occupancy == 0) {
+        return false;
+    }
+
+    // Else there are active persons, so return true
+    return true;
 }
 
 void ElevatorThread(int numFloors) {
     printf("Elevator with %d floors created!\n", numFloors);
     e = new ELEVATOR(numFloors);
     e->start();
+}
+
+void Elevator(int numFloors) {
+    // Create Elevator Thread
+    Thread* t = new Thread("Elevator");
+    t->Fork(ElevatorThread, numFloors);
 }
 
 int getNextPersonID() {
@@ -129,6 +165,6 @@ void ArrivingGoingFromTo(int atFloor, int toFloor) {
     p->toFloor = toFloor;
 
     // Create Person Thread
-    Thread* t = new Thread("Person " + std::to_string(p->id));
+    Thread* t = new Thread("Person " + p->id);
     t->Fork((VoidFunctionPtr)PersonThread, (int)p);
 }

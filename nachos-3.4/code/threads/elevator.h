@@ -3,6 +3,7 @@
 #define ELEVATOR_H
 
 #include "copyright.h"
+#include "synch.h"
 
 void Elevator(int numFloors);
 void ArrivingGoingFromTo(int atFloor, int toFloor);
@@ -18,17 +19,21 @@ class ELEVATOR {
 
 public:
     ELEVATOR(int numFloors);
-    ~ELEVATOR();
+    ~ELEVATOR(); //TODO make this
     void hailElevator(Person *p);
     void start();
 
 private:
+    bool hasActivePersons();
+
     int currentFloor;
     Condition **entering;
     Condition **leaving;
+    int *personsLeaving;
     int *personsWaiting;
     int occupancy;
     int maxOccupancy;
+    int numFloors;
     Lock *elevatorLock;
 
 };
