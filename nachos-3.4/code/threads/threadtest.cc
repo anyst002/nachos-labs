@@ -136,7 +136,6 @@ ThreadTest(int n) {
     DEBUG('t', "Entering SimpleTest");
     Thread *t;
     numThreadsActive = n;
-    printf("NumthreadsActive = %d\n", numThreadsActive);
 
     for(int i=1; i<=n; i++)
     {

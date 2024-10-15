@@ -19,23 +19,26 @@ class ELEVATOR {
 
 public:
     ELEVATOR(int numFloors);
-    ~ELEVATOR(); //TODO make this
+    ~ELEVATOR();
     void hailElevator(Person *p);
     void start();
 
 private:
+    bool moveElevator(int i);
     bool hasActivePersons();
+    bool finished();
 
-    int currentFloor;
     Condition **entering;
     Condition **leaving;
+    Lock* elevatorLock;
+
     int *personsLeaving;
     int *personsWaiting;
+
     int occupancy;
     int maxOccupancy;
     int numFloors;
-    Lock *elevatorLock;
-
+    int currentFloor;
 };
 
 #endif

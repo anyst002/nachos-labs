@@ -4,8 +4,8 @@ Exercise 1: Without synchronization, each thread stores a local copy of SharedVa
 
 Exercise 1 is completed; If make doesn't work when altering the preprocessor symbols remove all .o files first.
 
-Exercise 2 is completed, works with -rs.
+Exercise 2 is completed and works with -rs.
 
-Exercise 3 is completed, works with -rs.
+Exercise 3 is completed and works with -rs.
 
-Exercise 4 status placeholder
+Exercise 4 is completed and works with -rs.
