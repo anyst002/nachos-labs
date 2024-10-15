@@ -48,8 +48,40 @@ void ELEVATOR::start() {
             elevatorLock->Acquire();
         }
 
-        // Move the elevator floor by floor
-        for (int i = 0; i < numFloors; i++) {
+        // Move the elevator floor by floor upwards
+        for (int i = 0; i < numFloors - 1; i++) {
+            currentFloor = i + 1;
+            printf("Elevator arrives on floor %d\n", currentFloor);
+
+            // Signal all passengers leaving on this floor to leave
+            if (personsLeaving[i] != 0) {
+                printf("DEBUG - personsLeaving called\n");
+                leaving[i]->Broadcast(elevatorLock);
+                leaving[i]->Wait(elevatorLock);
+                personsLeaving[i] = 0;
+            }
+            printf("DEBUG - past personsLeaving check\n");
+            // Allow passengers to enter one at a time
+            while (personsWaiting[i] > 0 && occupancy < 5) {
+                printf("DEBUG - personsWaiting called\n");
+                entering[i]->Signal(elevatorLock);
+                personsWaiting[i]--;
+                occupancy++;
+            }
+            printf("DEBUG - past personsWaiting check\n");
+            elevatorLock->Release();
+            printf("DEBUG - lock released\n");
+            // Simulate travel time (yield to other threads)
+            for (int j = 0; j < 500000; j++) {
+                currentThread->Yield();
+            }
+            printf("DEBUG - spinning finished\n");
+            elevatorLock->Acquire();
+            printf("DEBUG - lock acquired\n");
+        }
+
+        // Move the elevator floor by floor downwards
+        for (int i = numFloors - 1; i > 0; i--) {
             currentFloor = i + 1;
             printf("Elevator arrives on floor %d\n", currentFloor);
 
