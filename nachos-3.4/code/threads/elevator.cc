@@ -5,7 +5,7 @@
 
 ELEVATOR* e;  // Global elevator instance
 int nextPersonID = 1;
-Lock* personIDLock = new Lock("PersonIDLock");
+Lock* personIDLock = new Lock("PersonIDLock");  // Lock for generating person IDs
 
 ELEVATOR::ELEVATOR(int numFloors) {
     this->numFloors = numFloors;
@@ -18,8 +18,8 @@ ELEVATOR::ELEVATOR(int numFloors) {
     entering = new Condition*[numFloors];
     leaving = new Condition*[numFloors];
     for (int i = 0; i < numFloors; i++) {
-        entering[i] = new Condition("Entering " + i);
-        leaving[i] = new Condition("Leaving " + i);
+        entering[i] = new Condition("Entering " + std::to_string(i));
+        leaving[i] = new Condition("Leaving " + std::to_string(i));
     }
 
     elevatorLock = new Lock("ElevatorLock");
@@ -122,11 +122,13 @@ void PersonThread(int personPtr) {
 }
 
 void ArrivingGoingFromTo(int atFloor, int toFloor) {
+    // Create Person struct
     Person* p = new Person;
     p->id = getNextPersonID();
     p->atFloor = atFloor;
     p->toFloor = toFloor;
 
+    // Create Person Thread
     Thread* t = new Thread("Person " + std::to_string(p->id));
     t->Fork((VoidFunctionPtr)PersonThread, (int)p);
 }

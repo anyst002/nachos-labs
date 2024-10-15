@@ -1,0 +1,11 @@
+Group 6 -- Andrew Nystrom, David Martinez, Kendrick Crespo
+
+Exercise 1: Without synchronization, each thread stores a local copy of SharedVariable with its initial value of 0, resulting in each thread updating SharedVariable to 1 then copying the 1 and repeating the cycle. 
+
+Exercise 1 is completed; If make doesn't work when altering the preprocessor symbols remove all .o files first.
+
+Exercise 2 is completed, works with -rs.
+
+Exercise 3 is completed, works with -rs.
+
+Exercise 4 status placeholder
