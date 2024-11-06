@@ -1,6 +1,7 @@
 #ifndef PCBMANAGER_H
 #define PCBMANAGER_H
 
+#include "synch.h"
 #include "bitmap.h"
 #include "pcb.h"
 
@@ -19,8 +20,7 @@ class PCBManager {
     private:
         BitMap* bitmap;
         PCB** pcbs;
-        // Need a lock here
-        // Lock* pcbManagerLock;
+        Lock* pcbManagerLock;
 
 };
 

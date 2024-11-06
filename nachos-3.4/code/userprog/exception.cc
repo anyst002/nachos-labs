@@ -23,8 +23,9 @@
 
 #include "copyright.h"
 #include "system.h"
-#include "syscall.h"
-#include "system.h"
+#include "syscall.h" // <- Syscall codes and functions are defined here.
+#include "system.h"  // included twice, may not be an issue, just noting
+// TODO: May have to include some means for pcbmanager.h to connect somewhere, not sure
 
 //----------------------------------------------------------------------
 // ExceptionHandler
@@ -51,8 +52,10 @@
 
 
 void doExit(int status) {
+    // Check input is reasonable?
 
-    int pid = 99;
+    // Get process id
+    int pid = currentThread->space->pcb->pid;
 
     printf("System Call: [%d] invoked [Exit]\n", pid);
     printf ("Process [%d] exits with [%d]\n", pid, status);
@@ -65,6 +68,11 @@ void doExit(int status) {
 
     // Delete exited children and set parent null for non-exited ones
     pcb->DeleteExitedChildrenSetParentNull();
+
+    // TODO: Supply status to parent process if and when it does a Join()
+    // Most likely that will go here 
+    // "if current process has a parent, remove itself from the children list 
+    //  of its parent process and set child exit value to parent"
 
     // Manage PCB memory As a child process
     if(pcb->parent == NULL) pcbManager->DeallocatePCB(pcb);
@@ -87,20 +95,26 @@ void incrementPC() {
     machine->WriteRegister(NextPCReg, oldPCReg + 8);
 }
 
-
+// Helper function for doFork()
 void childFunction(int pid) {
 
     // 1. Restore the state of registers
-    // currentThread->RestoreUserState()
+    currentThread->RestoreUserState();
 
     // 2. Restore the page table for child
-    // currentThread->space->RestoreState()
+    currentThread->space->RestoreState();
 
-    // machine->Run();
+    machine->Run();
 
 }
 
 int doFork(int functionAddr) {
+    // Check input is reasonable?
+
+    // Get process id
+    int pid = currentThread->space->pcb->pid;
+
+    printf("System Call: [%d] invoked [Fork]\n", pid);
 
     // 1. Check if sufficient memory exists to create new process
     // currentThread->space->GetNumPages() <= mm->GetFreePageCount()
@@ -145,6 +159,12 @@ int doFork(int functionAddr) {
 }
 
 int doExec(char* filename) {
+
+    // Get process id
+    int pid = currentThread->space->pcb->pid;
+
+    printf("System Call: [%d] invoked [Exec]\n", pid);
+    printf("Exec Program: [%d] loading [%s]\n", pid, filename);
 
     // Use progtest.cc:StartProcess() as a guide
 
@@ -194,6 +214,11 @@ int doExec(char* filename) {
 
 int doJoin(int pid) {
 
+    // Get process id
+    int parentPid = currentThread->space->pcb->pid;
+
+    printf("System Call: [%d] invoked [Join]\n", parentPid);
+
     // 1. Check if this is a valid pid and return -1 if not
     // PCB* joinPCB = pcbManager->GetPCB(pid);
     // if (pcb == NULL) return -1;
@@ -215,6 +240,11 @@ int doJoin(int pid) {
 
 
 int doKill (int pid) {
+
+    // Get process id
+    int parentPid = currentThread->space->pcb->pid;
+
+    printf("System Call: [%d] invoked [Kill]\n", parentPid);
 
     // 1. Check if the pid is valid and if not, return -1
     // PCB* joinPCB = pcbManager->GetPCB(pid);
@@ -239,6 +269,12 @@ int doKill (int pid) {
 
 
 void doYield() {
+
+    // Get process id
+    int pid = currentThread->space->pcb->pid;
+
+    printf("System Call: [%d] invoked [Yield]\n", pid);
+
     currentThread->Yield();
 }
 
@@ -300,6 +336,14 @@ void doCreate(char* fileName)
     fileSystem->Create(fileName, 0);
 }
 
+// Checks each syscall code, exits after one is run.
+// If no valid excpetion/syscall is run, outputs a debug message.
+// Each syscall calls its related do subroutine (Fork calls doFork, etc.)
+// The actual syscall code is run in its related subroutine above.
+// The subroutine output is then supplied back here and written back to the machine.
+// Finally, the incrementPC() is called to update the program counter.
+//
+// TODO: The branch for Exit() below doesn't call incrementPC(), double check that.
 void
 ExceptionHandler(ExceptionType which)
 {
@@ -309,7 +353,6 @@ ExceptionHandler(ExceptionType which)
 	DEBUG('a', "Shutdown, initiated by user program.\n");
    	interrupt->Halt();
     } else  if ((which == SyscallException) && (type == SC_Exit)) {
-        // Implement Exit system call
         doExit(machine->ReadRegister(4));
     } else if ((which == SyscallException) && (type == SC_Fork)) {
         int ret = doFork(machine->ReadRegister(4));
