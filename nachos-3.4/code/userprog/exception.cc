@@ -25,7 +25,6 @@
 #include "system.h"
 #include "syscall.h" // <- Syscall codes and functions are defined here.
 #include "system.h"  // included twice, may not be an issue, just noting
-// TODO: May have to include some means for pcbmanager.h to connect somewhere, not sure
 
 //----------------------------------------------------------------------
 // ExceptionHandler
@@ -52,14 +51,12 @@
 
 
 void doExit(int status) {
-    // Check input is reasonable?
 
     // Get process id
     int pid = currentThread->space->pcb->pid;
 
-    printf("System Call: [%d] invoked [Exit]\n", pid);
+    printf("System Call: [%d] invoked Exit\n", pid);
     printf ("Process [%d] exits with [%d]\n", pid, status);
-
 
     currentThread->space->pcb->exitStatus = status;
 
@@ -75,7 +72,10 @@ void doExit(int status) {
     //  of its parent process and set child exit value to parent"
 
     // Manage PCB memory As a child process
-    if(pcb->parent == NULL) pcbManager->DeallocatePCB(pcb);
+    if (pcb->parent != NULL) {
+        pcb->parent->RemoveChild(pcb);
+    }
+    pcbManager->DeallocatePCB(pcb);
 
     // Delete address space only after use is completed
     delete currentThread->space;
@@ -114,47 +114,47 @@ int doFork(int functionAddr) {
     // Get process id
     int pid = currentThread->space->pcb->pid;
 
-    printf("System Call: [%d] invoked [Fork]\n", pid);
+    printf("System Call: [%d] invoked Fork\n", pid);
 
-    // 1. Check if sufficient memory exists to create new process
-    // currentThread->space->GetNumPages() <= mm->GetFreePageCount()
-    // if check fails, return -1
+    if (currentThread->space->GetNumPages() > mm->GetFreePageCount()) {
+        printf("Process [%d] does not have enough memory to Fork!\n", pid); //TODO delete later
+        return -1;
+    }
 
     // 2. SaveUserState for the parent thread
-    // currentThread->SaveUserState();
+    currentThread->SaveUserState();
 
     // 3. Create a new address space for child by copying parent address space
-    // Parent: currentThread->space
-    // childAddrSpace: new AddrSpace(currentThread->space)
-
     // 4. Create a new thread for the child and set its addrSpace
-    // childThread = new Thread("childThread")
-    // child->space = childAddSpace;
+    Thread* childThread = new Thread("childThread");
+    childThread->space = new AddrSpace(currentThread->space);
 
     // 5. Create a PCB for the child and connect it all up
-    // pcb: pcbManager->AllocatePCB();
-    // pcb->thread = childThread
+    PCB* childPCB = pcbManager->AllocatePCB();
+    childPCB->thread = childThread;
     // set parent for child pcb
+    childPCB->parent = currentThread->space->pcb;
     // add child for parent pcb
+    currentThread->space->pcb->AddChild(childPCB);
     // initialize pcb in childAddSpace
+    childThread->space->pcb = childPCB;
 
     // 6. Set up machine registers for child and save it to child thread
-    // PCReg: functionAddr
-    // PrevPCReg: functionAddr-4
-    // NextPCReg: functionAddr+4
-    // childThread->SaveUserState();
+    machine->WriteRegister(PCReg, functionAddr);
+    machine->WriteRegister(PrevPCReg, functionAddr - 4);
+    machine->WriteRegister(NextPCReg, functionAddr + 4);
+    childThread->SaveUserState();
 
     // 7. Restore register state of parent user-level process
-    // currentThread->RestoreUserState()
+    currentThread->RestoreUserState();
 
     // 8. Call thread->fork on Child
-    // childThread->Fork(childFunction, pcb->pid)
+    childThread->Fork(childFunction, childPCB->pid);
 
-    // pcreg = machine->ReadRegister(PCReg)
-    // print message for child creation (pid,  pcreg, currentThread->space->GetNumPages())
+    int pcreg = machine->ReadRegister(PCReg);
+    printf("Process [%d] Fork: start at address [%p] with [%d] pages memory\n", pid, pcreg, currentThread->space->GetNumPages());
 
-
-    // 9. return pcb->pid;
+    return childPCB->pid;
 
 }
 
@@ -163,7 +163,7 @@ int doExec(char* filename) {
     // Get process id
     int pid = currentThread->space->pcb->pid;
 
-    printf("System Call: [%d] invoked [Exec]\n", pid);
+    printf("System Call: [%d] invoked Exec\n", pid);
     printf("Exec Program: [%d] loading [%s]\n", pid, filename);
 
     // Use progtest.cc:StartProcess() as a guide
@@ -217,24 +217,23 @@ int doJoin(int pid) {
     // Get process id
     int parentPid = currentThread->space->pcb->pid;
 
-    printf("System Call: [%d] invoked [Join]\n", parentPid);
+    printf("System Call: [%d] invoked Join\n", parentPid);
 
     // 1. Check if this is a valid pid and return -1 if not
-    // PCB* joinPCB = pcbManager->GetPCB(pid);
-    // if (pcb == NULL) return -1;
+    PCB* joinPCB = pcbManager->GetPCB(pid);
+    if (joinPCB == NULL) return -1;
 
     // 2. Check if pid is a child of current process
-    // PCB* pcb = currentThread->space->pcb;
-    // if (pcb != joinPCB->parent) return -1;
+    if (currentThread->space->pcb != joinPCB->parent) return -1;
 
-    // 3. Yield until joinPCB has not exited
-    // while(!joinPCB->hasExited) currentThread->Yield();
+    // 3. Yield while joinPCB has not exited
+    while(!joinPCB->HasExited()) currentThread->Yield();
 
     // 4. Store status and delete joinPCB
-    // int status = joinPCB->exitStatus;
-    // delete joinPCB;
+    int status = joinPCB->exitStatus;
+    //delete joinPCB;
 
-    // 5. return status;
+    return status;
 
 }
 
@@ -244,7 +243,7 @@ int doKill (int pid) {
     // Get process id
     int parentPid = currentThread->space->pcb->pid;
 
-    printf("System Call: [%d] invoked [Kill]\n", parentPid);
+    printf("System Call: [%d] invoked Kill\n", parentPid);
 
     // 1. Check if the pid is valid and if not, return -1
     // PCB* joinPCB = pcbManager->GetPCB(pid);
@@ -273,7 +272,7 @@ void doYield() {
     // Get process id
     int pid = currentThread->space->pcb->pid;
 
-    printf("System Call: [%d] invoked [Yield]\n", pid);
+    printf("System Call: [%d] invoked Yield\n", pid);
 
     currentThread->Yield();
 }
@@ -342,8 +341,6 @@ void doCreate(char* fileName)
 // The actual syscall code is run in its related subroutine above.
 // The subroutine output is then supplied back here and written back to the machine.
 // Finally, the incrementPC() is called to update the program counter.
-//
-// TODO: The branch for Exit() below doesn't call incrementPC(), double check that.
 void
 ExceptionHandler(ExceptionType which)
 {

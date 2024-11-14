@@ -88,6 +88,8 @@ AddrSpace::AddrSpace(OpenFile *executable)
         return;
     }
 
+    printf("Loaded Program: [%d] code | [%d] data | [%d] bss\n", noffH.code.size, noffH.initData.size, noffH.uninitData.size);
+
     // Allocate a new PCB for the address space
     pcb = pcbManager->AllocatePCB();
     pcb->thread = currentThread;
@@ -198,7 +200,10 @@ AddrSpace::AddrSpace(AddrSpace* space) {
 
 AddrSpace::~AddrSpace()
 {
-   delete pageTable;
+    for (unsigned int i = 0; i < numPages; i++) {
+        mm->DeallocatePage(pageTable[i].physicalPage);
+    }
+    delete pageTable;
 }
 
 //----------------------------------------------------------------------
