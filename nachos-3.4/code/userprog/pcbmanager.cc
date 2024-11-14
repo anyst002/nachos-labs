@@ -44,9 +44,9 @@ PCB* PCBManager::AllocatePCB() {
 int PCBManager::DeallocatePCB(PCB* pcb) {
 
     // Check is pcb is valid -- check pcbs for pcb->pid
-    // if(pcbs[pcb->pid] == NULL || pcbs[pcb->pid] != pcb) {
-    //     throw exception and break
-    // }
+    if(pcbs[pcb->pid] == NULL || pcbs[pcb->pid] != pcb) {
+        return -1;
+    }
 
     pcbManagerLock->Acquire();
 
