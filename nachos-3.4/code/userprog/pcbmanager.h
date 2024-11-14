@@ -1,11 +1,11 @@
 #ifndef PCBMANAGER_H
 #define PCBMANAGER_H
 
-#include "synch.h"
 #include "bitmap.h"
 #include "pcb.h"
 
 class PCB;
+class Lock;
 
 class PCBManager {
 

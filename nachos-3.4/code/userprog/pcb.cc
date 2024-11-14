@@ -1,4 +1,5 @@
 #include "pcb.h"
+#include "pcbmanager.h"
 
 
 PCB::PCB(int id) {

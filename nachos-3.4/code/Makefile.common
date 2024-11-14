@@ -78,6 +78,7 @@ USERPROG_H = ../userprog/addrspace.h\
 	../userprog/memorymanager.h\
 	../userprog/pcbmanager.h\
 	../userprog/pcb.h\
+	../userprog/syscall.h\
 	../filesys/filesys.h\
 	../filesys/openfile.h\
 	../machine/console.h\

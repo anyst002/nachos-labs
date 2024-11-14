@@ -1,5 +1,5 @@
 #include "pcbmanager.h"
-
+#include "synch.h"
 
 PCBManager::PCBManager(int maxProcesses) {
 
