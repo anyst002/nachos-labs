@@ -1,0 +1,55 @@
+Group 6 -- Andrew Nystrom, David Martinez, Kendrick Crespo
+
+The majority of the code design was already provided in the starter code's comments, so we will primarily explain how the code works.
+
+When a syscall is called, the program traps back to the kernel through ExceptionHandler() in exception.cc. The exception handler then determines which syscall was called and runs the corresponding helper function below, as well as moving any arguments or return values in and out of registers:
+
+>doFork(functionAddr)
+Saves the register state of the current process. Creates a new user-level child process, allocates a new PCB and address space to the child process, and sets the current process as the parent. Writes the function address (functionAddr) to the child process' registers and saves its register state. Restores the parent thread's register state, forks a new thread for the child process. The child process thread restores the register state and page table of the child process and runs the supplied function.
+
+Returns -1 if there's not enough memory to fork the process, otherwise returns the process id of the child process.
+
+>doExit(status)
+Terminates the currently executing process and deallocates its components from memory. <Supply the argument to parent process if and when it does a Join().> <edit later>
+
+>doYield()
+Calls currentThread->Yield() to temporarily relinquish the CPU to another process.
+
+>doExec(filename)
+
+
+>doKill(SpaceId)
+
+
+>doJoin(SpaceId)
+
+=====
+
+Below is a list of user programs included to test the different syscalls, most of which were included in the TA notes. If a user program has its expected output provided then the output file will be listed with the program name. All programs are made to be run through nachos directly unless specified otherwise. A test program is run by sending the command [./nachos -x ../test/filename] in the userprog directory, replacing "filename" with the name of the desired program.
+
+>fork - forkout.txt
+Tests Fork().
+
+>exec - execout.txt
+Tests Exec(). Executes the program memory.
+
+>join - joinout.txt
+Tests Join().
+
+>kill - killout.txt
+Tests Kill().
+
+>killtest
+Tests the potential outputs of Kill() in more depth.
+
+>stresstest
+Forks three processes and yields control back and forth to them repeatedly.
+
+>matmult
+Intended to be called through Exec() on multple processes rather than ran directly. Performs matrix multiplication to stress the virtual memory.
+
+>sort
+Intended to be called through Exec() on multple processes rather than ran directly. Slowly sorts a large array of integers to stress the virtual memory.
+
+>memory
+Intended to be called through Exec() on multple processes rather than ran directly. Updates values in an array then ends, essentially just stalling for some short time.
