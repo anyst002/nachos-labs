@@ -246,14 +246,14 @@ int doKill (int pid) {
     printf("System Call: [%d] invoked Kill\n", curPid);
 
     // 1. Check if the pid is valid and if not, return -1
-    PCB* joinPCB = pcbManager->GetPCB(pid);
-    if (joinPCB == NULL) {
+    PCB* killPCB = pcbManager->GetPCB(pid);
+    if (killPCB == NULL) {
         printf("Process [%d] cannot kill process [%d]: doesn't exist\n", curPid, pid);
         return -1;
     }
 
     // 2. IF pid is self, then just exit the process
-    if (joinPCB == currentThread->space->pcb) {
+    if (killPCB == currentThread->space->pcb) {
         printf("Process [%d] killed itself\n", curPid);
         doExit(0);
         return 0;
@@ -262,18 +262,18 @@ int doKill (int pid) {
     // 3. Valid kill, pid exists and not self, do cleanup similar to Exit
 
     // Delete exited children and set parent null for non-exited ones
-    joinPCB->DeleteExitedChildrenSetParentNull();
+    killPCB->DeleteExitedChildrenSetParentNull();
 
     // Remove killed thread from children list of parent if available
-    if (joinPCB->parent != NULL) {
-        joinPCB->parent->RemoveChild(joinPCB);
+    if (killPCB->parent != NULL) {
+        killPCB->parent->RemoveChild(killPCB);
     }
     
     // Delete address space, set thread to be destroyed
-    delete joinPCB->thread->space;
-    scheduler->RemoveThread(joinPCB->thread);
+    delete killPCB->thread->space;
+    scheduler->RemoveThread(killPCB->thread);
 
-    pcbManager->DeallocatePCB(joinPCB);
+    pcbManager->DeallocatePCB(killPCB);
 
     printf("Process [%d] killed process [%d]\n", curPid, pid);
 

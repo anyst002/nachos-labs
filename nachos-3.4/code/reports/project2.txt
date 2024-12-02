@@ -17,9 +17,10 @@ Calls currentThread->Yield() to temporarily relinquish the CPU to another proces
 
 >doExec(filename)
 
-
 >doKill(SpaceId)
+Ensures the supplied id is valid. Calls exit if the id matches the current thread's id. Otherwise Terminates the process with the supplied id and deallocates its components from memory.
 
+Returns -1 if the supplied process id is invalid, otherwise returns 0.
 
 >doJoin(SpaceId)
 
