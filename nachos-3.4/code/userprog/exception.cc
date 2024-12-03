@@ -128,6 +128,7 @@ int doFork(int functionAddr) {
     // 4. Create a new thread for the child and set its addrSpace
     Thread* childThread = new Thread("childThread");
     childThread->space = new AddrSpace(currentThread->space);
+    printf("Process [%d] Fork: start at address [%p] with [%d] pages memory\n", pid, (void*)functionAddr, numPages);
 
     // 5. Create a PCB for the child and connect it all up
     PCB* childPCB = pcbManager->AllocatePCB();
@@ -150,9 +151,6 @@ int doFork(int functionAddr) {
 
     // 8. Call thread->fork on Child
     childThread->Fork(childFunction, childPCB->pid);
-
-    int pcreg = machine->ReadRegister(PCReg);
-    printf("Process [%d] Fork: start at address [%p] with [%d] pages memory\n", pid, pcreg, currentThread->space->GetNumPages());
 
     return childPCB->pid;
 
@@ -212,6 +210,8 @@ int doExec(char* filename) {
     // 7. Set the addrspace for currentThread
     // currentThread->space = space;
     currentThread->space = space;
+	
+    printf("Loaded Program: [%d] code | [%d] data | [%d] bss\n", space->GetCodeSize(), space->GetDataSize(), space->GetBSSSize());
 
     // 8. Initialize registers for new addrspace
     //  space->InitRegisters();		// set the initial register values
