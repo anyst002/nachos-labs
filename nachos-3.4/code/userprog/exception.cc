@@ -169,6 +169,7 @@ int doExec(char* filename) {
     // Use progtest.cc:StartProcess() as a guide
 
     // 1. Open the file and check validity
+	
     // OpenFile *executable = fileSystem->Open(filename);
     // AddrSpace *space;
 
@@ -176,37 +177,55 @@ int doExec(char* filename) {
     //     printf("Unable to open file %s\n", filename);
     //     return -1;
     // }
+	OpenFile* executable = fileSystem->Open(filename);
+    if (executable == NULL) {
+        printf("Unable to open file %s\n", filename);
+        return -1; // Return error if the file can't be opened
+    }
 
     // 2. Delete current address space but store current PCB first if using in Step 5.
     // PCB* pcb = currentThread->space->pcb;
     // delete currentThread->space;
-
+    PCB* pcb = currentThread->space->pcb;
+	
     // 3. Create new address space
     // space = new AddrSpace(executable);
+    delete currentThread->space;
 
     // 4.     delete executable;			// close file
+    AddrSpace* space = new AddrSpace(executable);
+    delete executable;
 
     // 5. Check if Addrspace creation was successful
     // if(space->valid != true) {
     // printf("Could not create AddrSpace\n");
     //     return -1;
     // }
-
+    if (!space->valid) { 
+        printf("Could not create AddrSpace for [%s]\n", filename);
+        return -1; // Return error if address space creation failed
+    }
     // 6. Set the PCB for the new addrspace - reused from deleted address space
     // space->pcb = pcb;
+    space->pcb = pcb;
 
     // 7. Set the addrspace for currentThread
     // currentThread->space = space;
+    currentThread->space = space;
 
     // 8. Initialize registers for new addrspace
     //  space->InitRegisters();		// set the initial register values
+    space->InitRegisters(); 
 
     // 9. Initialize the page table
     // space->RestoreState();		// load page table register
+    space->RestoreState();
 
     // 10. Run the machine now that all is set up
     // machine->Run();			// jump to the user progam
     // ASSERT(FALSE); // Execution nevere reaches here
+    machine->Run(); // Begin execution (control will not return to this function)
+    ASSERT(FALSE);
 
     return 0;
 }
