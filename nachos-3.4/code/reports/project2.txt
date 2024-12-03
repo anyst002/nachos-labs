@@ -10,12 +10,15 @@ Saves the register state of the current process. Creates a new user-level child 
 Returns -1 if there's not enough memory to fork the process, otherwise returns the process id of the child process.
 
 >doExit(status)
-Terminates the currently executing process and deallocates its components from memory. <Supply the argument to parent process if and when it does a Join().> <edit later>
+Terminates the currently executing process and deallocates its components from memory.
 
 >doYield()
 Calls currentThread->Yield() to temporarily relinquish the CPU to another process.
 
 >doExec(filename)
+Opens the file and checks its validity. Deletes the current address space but saves the PCB. Creates a new address space for the file, updates the PCB of the new space to the old PCB. Sets the current thread's address space to the new address space, initializes the registsers and page table for the new space, then runs the file.
+
+Returns -1 if file can't be opened or address space could not be made.
 
 >doKill(SpaceId)
 Ensures the supplied id is valid. Calls exit if the id matches the current thread's id. Otherwise Terminates the process with the supplied id and deallocates its components from memory.
@@ -23,6 +26,7 @@ Ensures the supplied id is valid. Calls exit if the id matches the current threa
 Returns -1 if the supplied process id is invalid, otherwise returns 0.
 
 >doJoin(SpaceId)
+This system call is not completed and causes a segment fault when called. When exit is called the PCB of the exiting process is deallocated. When join is called it first checks that the PCB of the supplied process id is valid. If the child thread has already exited before join is called then join will not be able to recognize the process id as valid since the PCB will be deallocated.
 
 =====
 

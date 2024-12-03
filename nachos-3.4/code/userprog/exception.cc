@@ -56,7 +56,7 @@ void doExit(int status) {
     int pid = currentThread->space->pcb->pid;
 
     printf("System Call: [%d] invoked Exit\n", pid);
-    printf ("Process [%d] exits with [%d]\n", pid, status);
+    printf("Process [%d] exits with [%d]\n", pid, status);
 
     currentThread->space->pcb->exitStatus = status;
 
@@ -117,7 +117,7 @@ int doFork(int functionAddr) {
     printf("System Call: [%d] invoked Fork\n", pid);
 
     if (currentThread->space->GetNumPages() > mm->GetFreePageCount()) {
-        printf("Process [%d] does not have enough memory to Fork!\n", pid); //TODO delete later
+        printf("Process [%d] does not have enough memory to Fork!\n", pid);
         return -1;
     }
 
@@ -128,7 +128,6 @@ int doFork(int functionAddr) {
     // 4. Create a new thread for the child and set its addrSpace
     Thread* childThread = new Thread("childThread");
     childThread->space = new AddrSpace(currentThread->space);
-    printf("Process [%d] Fork: start at address [%p] with [%d] pages memory\n", pid, (void*)functionAddr, numPages);
 
     // 5. Create a PCB for the child and connect it all up
     PCB* childPCB = pcbManager->AllocatePCB();
@@ -152,6 +151,9 @@ int doFork(int functionAddr) {
     // 8. Call thread->fork on Child
     childThread->Fork(childFunction, childPCB->pid);
 
+    int pcreg = machine->ReadRegister(PCReg);
+    printf("Process [%d] Fork: start at address [%p] with [%d] pages memory\n", pid, pcreg, currentThread->space->GetNumPages());
+
     return childPCB->pid;
 
 }
@@ -162,19 +164,8 @@ int doExec(char* filename) {
     int pid = currentThread->space->pcb->pid;
 
     printf("System Call: [%d] invoked Exec\n", pid);
-    printf("Exec Program: [%d] loading [%s]\n", pid, filename);
-
-    // Use progtest.cc:StartProcess() as a guide
 
     // 1. Open the file and check validity
-	
-    // OpenFile *executable = fileSystem->Open(filename);
-    // AddrSpace *space;
-
-    // if (executable == NULL) {
-    //     printf("Unable to open file %s\n", filename);
-    //     return -1;
-    // }
 	OpenFile* executable = fileSystem->Open(filename);
     if (executable == NULL) {
         printf("Unable to open file %s\n", filename);
@@ -182,48 +173,36 @@ int doExec(char* filename) {
     }
 
     // 2. Delete current address space but store current PCB first if using in Step 5.
-    // PCB* pcb = currentThread->space->pcb;
-    // delete currentThread->space;
     PCB* pcb = currentThread->space->pcb;
+    delete currentThread->space;
 	
     // 3. Create new address space
-    // space = new AddrSpace(executable);
-    delete currentThread->space;
+    AddrSpace* space = new AddrSpace(executable);
 
     // 4.     delete executable;			// close file
-    AddrSpace* space = new AddrSpace(executable);
     delete executable;
 
     // 5. Check if Addrspace creation was successful
-    // if(space->valid != true) {
-    // printf("Could not create AddrSpace\n");
-    //     return -1;
-    // }
-    if (!space->valid) { 
+    if (space->valid != true) { 
         printf("Could not create AddrSpace for [%s]\n", filename);
         return -1; // Return error if address space creation failed
     }
+
     // 6. Set the PCB for the new addrspace - reused from deleted address space
-    // space->pcb = pcb;
     space->pcb = pcb;
 
     // 7. Set the addrspace for currentThread
-    // currentThread->space = space;
     currentThread->space = space;
-	
-    printf("Loaded Program: [%d] code | [%d] data | [%d] bss\n", space->GetCodeSize(), space->GetDataSize(), space->GetBSSSize());
 
     // 8. Initialize registers for new addrspace
-    //  space->InitRegisters();		// set the initial register values
     space->InitRegisters(); 
 
     // 9. Initialize the page table
-    // space->RestoreState();		// load page table register
     space->RestoreState();
 
+    printf("Exec Program: [%d] loading [%s]\n", pid, filename);
+
     // 10. Run the machine now that all is set up
-    // machine->Run();			// jump to the user progam
-    // ASSERT(FALSE); // Execution nevere reaches here
     machine->Run(); // Begin execution (control will not return to this function)
     ASSERT(FALSE);
 
@@ -250,7 +229,7 @@ int doJoin(int pid) {
 
     // 4. Store status and delete joinPCB
     int status = joinPCB->exitStatus;
-    //delete joinPCB;
+    delete joinPCB;
 
     return status;
 
