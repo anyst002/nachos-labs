@@ -232,28 +232,35 @@ int doExec(char* filename) {
 
 
 int doJoin(int pid) {
-
-    // Get process id
+    // Get parent process ID
     int parentPid = currentThread->space->pcb->pid;
-
     printf("System Call: [%d] invoked Join\n", parentPid);
 
-    // 1. Check if this is a valid pid and return -1 if not
+    // 1. Check if this is a valid PID
     PCB* joinPCB = pcbManager->GetPCB(pid);
-    if (joinPCB == NULL) return -1;
+    if (joinPCB == NULL) {
+        printf("Join Error: Invalid PID [%d]\n", pid);
+        return -1; // Return error
+    }
 
-    // 2. Check if pid is a child of current process
-    if (currentThread->space->pcb != joinPCB->parent) return -1;
+    // 2. Check if pid is a child of the current process
+    if (currentThread->space->pcb != joinPCB->parent) {
+        printf("Join Error: Process [%d] is not a child of [%d]\n", pid, parentPid);
+        return -1; // Return error
+    }
 
-    // 3. Yield while joinPCB has not exited
-    while(!joinPCB->HasExited()) currentThread->Yield();
+    // 3. Wait for the child process to exit
+    while (!joinPCB->HasExited()) {
+        currentThread->Yield(); // Yield CPU to allow child to run
+    }
 
-    // 4. Store status and delete joinPCB
+    // 4. Retrieve the exit status of the child
     int status = joinPCB->exitStatus;
-    //delete joinPCB;
+
+    // 5. Clean up child PCB
+    pcbManager->DeallocatePCB(joinPCB);
 
     return status;
-
 }
 
 
